@@ -116,6 +116,9 @@ def parseFeed(feed_url):
     for item in feed.entries:
         if searchPattern(item.title, searchitems):
             if item.link not in addeditems:
+                if configuration['dry-run']:
+                    logging.info("Would add %s", item.link)
+                    continue
                 try:
                     addItem(item)
                 except transmission_rpc.error.TransmissionError as e:
@@ -174,13 +177,17 @@ parser.add_argument('--download-with-python',
 					help='If specified the torrent file will be downloaded with Python\'s request module, and not by Transmission. ')
 parser.add_argument('--feed-urls', default=None, metavar='<url>', type=str, nargs='+',
 				   help='Feed Url(s)')
+parser.add_argument('--dry-run',
+					action='store_true',
+					help="Prints mathing torrents to stdout instead of adding them. Doesn't touch addeditems.txt.")
 # parse the arguments
 args = parser.parse_args()
 
 # dictionary with default settings
 configuration = {"transmission-host" : "", "transmission-port" : "", "transmission-user" : "",
 	 "transmission-password" : "", "log-file" : "", "add-paused" : False, "download-dir" : "",
-	 "download-with-python" : False, "search-patterns-file" : "", "feed-urls" : [""]}
+	 "download-with-python" : False, "search-patterns-file" : "", "feed-urls" : [""],
+	 "dry-run" : False}
 
 # get settings from args
 for item in configuration:
@@ -229,7 +236,7 @@ if __name__ == "__main__":
 
 
 	# clears the added items file if asked for
-	if args.clear_added_items:
+	if args.clear_added_items and not args.dry_run:
 		os.remove(added_items_filepath)
 
 	# Connecting to Tranmission
