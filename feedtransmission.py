@@ -48,23 +48,30 @@ def dlTorrent(url):
         f.write(response.content)
         return str("file://") + str(filepath), filepath
 
+
+def itemLink(item):
+    for link in item.links:
+        if link['type'] == 'application/x-bittorrent':
+            return link['href']
+    return item.link
+
+
 # add the link to transmission and appends the link to the added items
-def addItem(item):
+def addItem(item, url):
     # decide if we download a torent or just pass a url
     if configuration["download-with-python"]:
-        url, filepath = dlTorrent(item.link)
+        url, filepath = dlTorrent(url)
     else:
-        url = item.link
         filepath = None
 
     if configuration["download-dir"] is not None:
-        logging.info("Adding Torrent: " + item.title + " (" + item.link + ") to " + configuration["download-dir"])
+        logging.info("Adding Torrent: " + item.title + " (" + url + ") to " + configuration["download-dir"])
         tc.add_torrent(url, download_dir = configuration["download-dir"], paused = configuration["add-paused"])
     else:
-        logging.info("Adding Torrent: " + item.title + " (" + item.link + ") to default directory")
+        logging.info("Adding Torrent: " + item.title + " (" + url + ") to default directory")
         tc.add_torrent(url, paused = configuration["add-paused"])
     with open(added_items_filepath, 'a') as f:
-        f.write(item.link + '\n')
+        f.write(url + '\n')
 
     # remove temporary torrent file
     if filepath is not None:
@@ -115,18 +122,21 @@ def parseFeed(feed_url):
 
     for item in feed.entries:
         if searchPattern(item.title, searchitems):
-            if item.link not in addeditems:
+            url = itemLink(item)
+            if url not in addeditems:
                 if configuration['dry-run']:
-                    logging.info("Would add %s", item.link)
+                    logging.info("Would add %s (%s)", item.title, url)
+                    if configuration['log-file']:
+                        print("Would add %s (%s)" % (item.title, url))
                     continue
                 try:
-                    addItem(item)
+                    addItem(item, url)
                 except transmission_rpc.error.TransmissionError as e:
-                    logging.error("Error adding item \'{0}\': {1}".format(item.link, e.message))
+                    logging.error("Error adding item \'{0}\': {1}".format(url, e.message))
                 #except transmission_rpc.HTTPHandlerError as e:
-                #    logging.error("Error adding item \'{0}\': [{1}] {2}".format(item.link, e.code, e.message))
+                #    logging.error("Error adding item \'{0}\': [{1}] {2}".format(url, e.code, e.message))
                 except:
-                    logging.error("Error adding item \'{0}\': {1}".format(item.link, str(sys.exc_info()[0]).strip()))
+                    logging.error("Error adding item \'{0}\': {1}".format(url, str(sys.exc_info()[0]).strip()))
 
 # argparse configuration and argument definitions
 parser = argparse.ArgumentParser(description='Reads RSS/Atom Feeds and add torrents to Transmission')
