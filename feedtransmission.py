@@ -27,12 +27,13 @@ def checkFilePath(path):
 
 # read the added items list from the file
 def readItems(filepath):
-	addeditems = []
-	if os.path.exists(filepath):
-		with open(filepath,'r') as f:
-			for line in f:
-				addeditems.append(line.rstrip('\n'))
-	return addeditems
+    addeditems = []
+    if os.path.exists(filepath):
+        with open(filepath, 'r') as f:
+            for line in f:
+                if line.strip() and not line.startswith('#'):
+                    addeditems.append(line.strip())
+    return addeditems
 
 # Download torrent as file
 def dlTorrent(url):
