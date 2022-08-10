@@ -84,6 +84,10 @@ def searchPattern(title, searchitems):
     if configuration["search-patterns-file"] is not None:
 
         for pattern in searchitems:
+            # early reject
+            if pattern.startswith('!'):
+                if re.search(pattern[1:], title):
+                    return False
             if re.search(pattern, title):
                 return True
         return False
@@ -109,7 +113,7 @@ def parseFeed(feed_url):
 
     # load pattern list to memory if present
     if configuration["search-patterns-file"] is not None:
-        path =configuration["search-patterns-file"]
+        path = configuration["search-patterns-file"]
 
         # check if given string contain relative or absolute path
         if os.path.isabs(path):
